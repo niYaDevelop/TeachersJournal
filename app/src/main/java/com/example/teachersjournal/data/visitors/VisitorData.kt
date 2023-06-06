@@ -1,4 +1,4 @@
-package com.example.teachersjournal.data
+package com.example.teachersjournal.data.visitors
 
 import androidx.room.ColumnInfo
 import androidx.room.Entity

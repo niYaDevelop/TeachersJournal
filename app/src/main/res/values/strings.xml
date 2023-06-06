@@ -2,11 +2,16 @@
     <string name="app_name">Teacher\'s Journal</string>
 
     <string name="students">ученики</string>
+    <string name="groups">группы</string>
     <string name="add_student">добавить\nученика</string>
+    <string name="add_group">добавить\nгруппу</string>
+    <string name="add_group_text">Добавьте группу</string>
     <string name="delete">удалить</string>
     <string name="average_rating">ср. балл</string>
     <string name="visits">посещено</string>
     <string name="no">Нет</string>
     <string name="yes">Да</string>
+    <string name="add">Добавить</string>
+    <string name="group_name">Название группы</string>
 
 </resources>
