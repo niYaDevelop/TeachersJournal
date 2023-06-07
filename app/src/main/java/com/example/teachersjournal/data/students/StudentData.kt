@@ -8,6 +8,7 @@ import androidx.room.PrimaryKey
 data class StudentData(
     @PrimaryKey(autoGenerate = true)
     val id: Int = 0,
+    @ColumnInfo(name = "student_group")
     val group: String,
     val name: String,
     val surname: String,

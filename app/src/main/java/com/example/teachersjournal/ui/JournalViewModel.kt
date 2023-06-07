@@ -1,6 +1,5 @@
 package com.example.teachersjournal.ui
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -10,6 +9,7 @@ import com.example.teachersjournal.JournalApplication
 import com.example.teachersjournal.data.AppDatabase
 import com.example.teachersjournal.data.groups.GroupData
 import com.example.teachersjournal.data.students.StudentData
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -25,22 +25,22 @@ class JournalViewModel(
 
 
     init{
-        readGroupList()
+        viewModelScope.launch {
+            val job = readGroupList(viewModelScope)
+            job.join()
+            setCurrentGroup(if(_uiState.value.groupList.isNotEmpty()) _uiState.value.groupList[0] else null)
+        }
     }
 
 
-    private fun readGroupList(){
-        viewModelScope.launch {
-            try {
-                val list = journalDatabase.getGroupDao().getAllGroups()
-                _uiState.update { currentState ->
-                    currentState.copy(
-                        groupList = list,
-                        currentGroup = if(list.isNotEmpty()) list[0] else null
-                    )
-                }
-            }catch (e: Exception){ println(e) }
-        }
+    private suspend fun readGroupList(scope: CoroutineScope) = scope.launch {
+        try {
+            _uiState.update { currentState ->
+                currentState.copy(
+                    groupList = journalDatabase.getGroupDao().getAllGroups()
+                )
+            }
+        }catch (e: Exception){ println(e) }
     }
 
 
@@ -61,19 +61,25 @@ class JournalViewModel(
     fun addGroup(group: String){
         viewModelScope.launch {
             try {
-                val groups = _uiState.value.groupList
-                val isContain = groups.any { it.groupName == group }
-                if(!isContain){
+                if(_uiState.value.groupList.any { it.groupName == group }){
+                    _uiState.update { currentState ->
+                        currentState.copy(
+                            groupAlreadyExist = true,
+                        )
+                    }
+                } else{
                     val newGroup = GroupData(groupName = group)
                     journalDatabase.getGroupDao().addGroup(newGroup)
-                    readGroupList()
+                    _uiState.update { currentState ->
+                        currentState.copy(
+                            groupList = currentState.groupList.plus(newGroup).toMutableList(),
+                            addGroup = false,
+                            groupAlreadyExist = false
+                        )
+                    }
+//                    val job = readGroupList(viewModelScope)
+//                    job.join()
                     setCurrentGroup(newGroup)
-                }
-                _uiState.update { currentState ->
-                    currentState.copy(
-                        addGroup = isContain,
-                        groupAlreadyExist = isContain,
-                    )
                 }
             }catch (e: Exception){ println(e) }
         }
@@ -91,22 +97,67 @@ class JournalViewModel(
         }
     }
 
+    fun hideAddStudentError(){
+        viewModelScope.launch {
+            try {
+                _uiState.update { currentState ->
+                    currentState.copy(
+                        studentAlreadyExist = false
+                    )
+                }
+            }catch (e: Exception){ println(e) }
+        }
+    }
+
 
 
     fun openAddStudentDialog(){
+        viewModelScope.launch {
+            try {
+                _uiState.update { currentState ->
+                    currentState.copy(
+                        addStudent = true,
+                        studentAlreadyExist = false
+                    )
+                }
+            }catch (e: Exception){ println(e) }
+        }
+    }
 
+    fun closeAddStudentDialog(){
+        viewModelScope.launch {
+            try {
+                _uiState.update { currentState ->
+                    currentState.copy(
+                        addStudent = false,
+                        studentAlreadyExist = false
+                    )
+                }
+            }catch (e: Exception){ println(e) }
+        }
     }
 
     fun addStudent(student: StudentData){
         viewModelScope.launch {
             try {
-                _uiState.update { currentState ->
-                    currentState.copy(
-                        studentList = currentState.studentList.plus(student).toMutableList(),
-                        addStudent = false
-                    )
+                val students = _uiState.value.studentList
+                val isContain = students.any { (it.name == student.name) && (it.surname == student.surname) }
+                if(isContain){
+                    _uiState.update { currentState ->
+                        currentState.copy(
+                            studentAlreadyExist = true,
+                        )
+                    }
+                }else {
+                    journalDatabase.getStudentDao().addStudent(student)
+                    _uiState.update { currentState ->
+                        currentState.copy(
+                            addStudent = false,
+                            studentAlreadyExist = false,
+                            studentList = currentState.studentList.plus(student).toMutableList()
+                        )
+                    }
                 }
-                journalDatabase.getStudentDao().addStudent(student)
             }catch (e: Exception){ println(e) }
         }
     }

@@ -6,6 +6,7 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -93,14 +94,13 @@ fun GroupScreen(journalViewModel: JournalViewModel = viewModel(factory = Journal
             )
         }
         if(uiState.addStudent && uiState.currentGroup != null){
-//            AddStudentDialog(
-//                groupList = uiState.groupList,
-//                currentGroup = uiState.currentGroup!!,
-//                hideError = {},
-//                onClose = { journalViewModel.closeAddStudentDialog() },
-//                onAdded = ,
-//                isContain =
-//            )
+            AddStudentDialog(
+                currentGroup = uiState.currentGroup!!,
+                hideError = { journalViewModel.hideAddStudentError() },
+                onClose = { journalViewModel.closeAddStudentDialog() },
+                onAdded = { student -> journalViewModel.addStudent(student) },
+                isContain = uiState.studentAlreadyExist
+            )
         }
         if(uiState.deleteStudent){
             DeleteStudentDialog(
@@ -217,9 +217,8 @@ fun StudentsList(
     onDeleteStudent: (StudentData) -> Unit,
     onAddStudent: () -> Unit
 ){
-
     Box(modifier = Modifier.fillMaxSize()) {
-        LazyColumn() {
+        LazyColumn(contentPadding = PaddingValues(bottom = 80.dp)) {
             items(list) { item ->
                 StudentCard(item, { onDeleteStudent(item) })
             }
@@ -349,38 +348,37 @@ fun AddGroupDialog(
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalComposeUiApi::class)
 @Composable
 fun AddStudentDialog(
     onClose: ()-> Unit,
     onAdded: (StudentData)-> Unit,
     isContain: Boolean,
     hideError: ()-> Unit,
-    groupList: List<GroupData>,
     currentGroup: GroupData
 ){
     var nameText by remember { mutableStateOf("") }
     var surnameText by remember { mutableStateOf("") }
-    var selectedGroup by remember { mutableStateOf(currentGroup) }
 
     AlertDialog(
         onDismissRequest = onClose,
         confirmButton = {
             TextButton(
-                onClick = { onAdded(StudentData(name = nameText, surname = surnameText, group = selectedGroup.groupName)) }
+                onClick = { onAdded(StudentData(name = nameText, surname = surnameText, group = currentGroup.groupName)) }
             ) {
                 Text(stringResource(id = R.string.add))
             }
         },
         dismissButton = {},
-        title = {Text("Добавить ученика")},
+        properties = DialogProperties(usePlatformDefaultWidth = false),
+        title = { Text("Добавить ученика") },
         text  = {
             Column() {
                 OutlinedTextField(
                     value = surnameText,
                     onValueChange = {
                         surnameText = it
-                        hideError
+                        hideError()
                     },
                     label = { Text("Фамилия") },
                     modifier = Modifier
@@ -390,27 +388,22 @@ fun AddStudentDialog(
                     value = nameText,
                     onValueChange = {
                         nameText = it
-                        hideError
+                        hideError()
                     },
                     label = { Text("Имя Отчество") },
                     modifier = Modifier
                         .fillMaxWidth(),
                 )
-                GroupDropdownMenu(
-                    groupList = groupList,
-                    selectedGroup = selectedGroup,
-                    onGroupChanged = {newGroup -> selectedGroup = newGroup}
-                )
-                if (isContain) {
-                    Text("Этот ученик уже есть в этой группе", color = Color.Red)
-                }
+                if (isContain) { Text("Этот ученик уже есть в этой группе", color = Color.Red) }
             }
         },
         shape = MaterialTheme.shapes.large,
+        modifier = Modifier.padding(horizontal = 8.dp),
     )
 }
 
 
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun DeleteStudentDialog(
     student: StudentData,
@@ -438,11 +431,14 @@ fun DeleteStudentDialog(
                 Text("Удалить ученика ${student.surname} ${student.name} из группы '${student.group}'?")
         },
         shape = MaterialTheme.shapes.large,
+        properties = DialogProperties(usePlatformDefaultWidth = false),
+        modifier = Modifier.padding(horizontal = 8.dp),
     )
 }
 
 
 
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun DeleteGroupDialog(
     group: GroupData,
@@ -470,63 +466,65 @@ fun DeleteGroupDialog(
             Text("Удалить группу '${group.groupName}'?")
         },
         shape = MaterialTheme.shapes.large,
+        properties = DialogProperties(usePlatformDefaultWidth = false),
+        modifier = Modifier.padding(horizontal = 8.dp),
     )
 }
 
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun GroupDropdownMenu(
-    groupList: List<GroupData>,
-    selectedGroup: GroupData,
-    onGroupChanged: (GroupData)-> Unit,
-){
-    var expanded by remember { mutableStateOf(false) }
-    ExposedDropdownMenuBox(
-        expanded = expanded,
-        onExpandedChange = {
-            expanded = !expanded
-        },
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(8.dp)
-    ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            OutlinedTextField(
-                value = selectedGroup.groupName,
-                onValueChange = {},
-                readOnly = true,
-                modifier = Modifier
-                    .menuAnchor()
-                    .fillMaxWidth(),
-                trailingIcon = {
-                    ExposedDropdownMenuDefaults.TrailingIcon(
-                        expanded = expanded
-                    )
-                },
-            )
-            ExposedDropdownMenu(
-                expanded = expanded,
-                onDismissRequest = { expanded = false },
-                modifier = Modifier
-                    .align(Alignment.CenterHorizontally)
-                    .fillMaxWidth()
-                    .padding(top = 8.dp)
-            ) {
-                groupList.forEach { item ->
-                    DropdownMenuItem(
-                        text = { Text(text = item.groupName) },
-                        onClick = {
-                            expanded = false
-                            onGroupChanged(item)
-                        },
-                    )
-                }
-            }
-        }
-    }
-}
-
+//
+//@OptIn(ExperimentalMaterial3Api::class)
+//@Composable
+//fun GroupDropdownMenu(
+//    groupList: List<GroupData>,
+//    selectedGroup: GroupData,
+//    onGroupChanged: (GroupData)-> Unit,
+//){
+//    var expanded by remember { mutableStateOf(false) }
+//    ExposedDropdownMenuBox(
+//        expanded = expanded,
+//        onExpandedChange = {
+//            expanded = !expanded
+//        },
+//        modifier = Modifier
+//            .fillMaxWidth()
+//            .padding(8.dp)
+//    ) {
+//        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+//            OutlinedTextField(
+//                value = selectedGroup.groupName,
+//                onValueChange = {},
+//                readOnly = true,
+//                modifier = Modifier
+//                    .menuAnchor()
+//                    .fillMaxWidth(),
+//                trailingIcon = {
+//                    ExposedDropdownMenuDefaults.TrailingIcon(
+//                        expanded = expanded
+//                    )
+//                },
+//            )
+//            ExposedDropdownMenu(
+//                expanded = expanded,
+//                onDismissRequest = { expanded = false },
+//                modifier = Modifier
+//                    .align(Alignment.CenterHorizontally)
+//                    .fillMaxWidth()
+//                    .padding(top = 8.dp)
+//            ) {
+//                groupList.forEach { item ->
+//                    DropdownMenuItem(
+//                        text = { Text(text = item.groupName) },
+//                        onClick = {
+//                            expanded = false
+//                            onGroupChanged(item)
+//                        },
+//                    )
+//                }
+//            }
+//        }
+//    }
+//}
+//
 
 @Preview(showBackground = true)
 @Composable
