@@ -3,6 +3,7 @@
 
     <string name="students">ученики</string>
     <string name="groups">группы</string>
+    <string name="lessons">занятия</string>
     <string name="add_student">добавить\nученика</string>
     <string name="add_group">добавить\nгруппу</string>
     <string name="add_group_text">Добавьте группу</string>

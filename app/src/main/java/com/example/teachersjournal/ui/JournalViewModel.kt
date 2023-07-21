@@ -8,6 +8,7 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.teachersjournal.JournalApplication
 import com.example.teachersjournal.data.AppDatabase
 import com.example.teachersjournal.data.groups.GroupData
+import com.example.teachersjournal.data.lessons.LessonData
 import com.example.teachersjournal.data.students.StudentData
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -51,6 +52,7 @@ class JournalViewModel(
                 _uiState.update { currentState ->
                     currentState.copy(
                         currentGroup = group,
+                        lessonList = if(group!= null) journalDatabase.getLessonDao().getAllLessonsInGroup(group.groupName) else mutableListOf(),
                         studentList = if(group!= null) journalDatabase.getStudentDao().getAllStudentsInGroup(group.groupName) else mutableListOf()
                     )
                 }
@@ -77,8 +79,6 @@ class JournalViewModel(
                             groupAlreadyExist = false
                         )
                     }
-//                    val job = readGroupList(viewModelScope)
-//                    job.join()
                     setCurrentGroup(newGroup)
                 }
             }catch (e: Exception){ println(e) }
@@ -110,7 +110,6 @@ class JournalViewModel(
     }
 
 
-
     fun openAddStudentDialog(){
         viewModelScope.launch {
             try {
@@ -132,6 +131,31 @@ class JournalViewModel(
                         addStudent = false,
                         studentAlreadyExist = false
                     )
+                }
+            }catch (e: Exception){ println(e) }
+        }
+    }
+
+    fun addLesson(lesson: LessonData){
+        viewModelScope.launch {
+            try {
+                val lessons = _uiState.value.lessonList
+                val isContain = lessons.any { (it.dateInMillis == lesson.dateInMillis) && (it.hour == lesson.hour) && (it.minute == lesson.minute) }
+                if(isContain){
+                    _uiState.update { currentState ->
+                        currentState.copy(
+                            lessonAlreadyExist = true,
+                        )
+                    }
+                }else {
+                    journalDatabase.getLessonDao().addLesson(lesson)
+                    setCurrentGroup(_uiState.value.currentGroup)    // для обновления списка уроков
+                    _uiState.update { currentState ->
+                        currentState.copy(
+                            addLesson = false,
+                            lessonAlreadyExist = false,
+                        )
+                    }
                 }
             }catch (e: Exception){ println(e) }
         }
@@ -174,6 +198,21 @@ class JournalViewModel(
                 }
                 journalDatabase.getStudentDao().removeStudent(student.id)
                 journalDatabase.getVisitorDao().removeStudent(student.id)
+            }catch (e: Exception){ println(e) }
+        }
+    }
+
+    fun deleteLesson(){
+        viewModelScope.launch {
+            try {
+                val lesson = _uiState.value.lessonToDelete!!
+                _uiState.update { currentState ->
+                    currentState.copy(
+                        deleteLesson = false,
+                        lessonList = currentState.lessonList.minus(lesson).toMutableList()
+                    )
+                }
+                journalDatabase.getLessonDao().removeLesson(lesson.id)
             }catch (e: Exception){ println(e) }
         }
     }
@@ -232,6 +271,32 @@ class JournalViewModel(
         }
     }
 
+    fun openAddLessonDialog(){
+        viewModelScope.launch {
+            try {
+                _uiState.update { currentState ->
+                    currentState.copy(
+                        addLesson = true,
+                        lessonAlreadyExist = false
+                    )
+                }
+            }catch (e: Exception){ println(e) }
+        }
+    }
+
+    fun closeAddLessonDialog(){
+        viewModelScope.launch {
+            try {
+                _uiState.update { currentState ->
+                    currentState.copy(
+                        addLesson = false,
+                        lessonAlreadyExist = false
+                    )
+                }
+            }catch (e: Exception){ println(e) }
+        }
+    }
+
     fun openDeleteGroupDialog(group: GroupData){
         viewModelScope.launch {
             try {
@@ -239,6 +304,32 @@ class JournalViewModel(
                     currentState.copy(
                         deleteGroup = true,
                         groupToDelete = group
+                    )
+                }
+            }catch (e: Exception){ println(e) }
+        }
+    }
+
+    fun closeDeleteLessonDialog(){
+        viewModelScope.launch {
+            try {
+                _uiState.update { currentState ->
+                    currentState.copy(
+                        deleteLesson = false,
+                        lessonToDelete = null
+                    )
+                }
+            }catch (e: Exception){ println(e) }
+        }
+    }
+
+    fun openDeleteLessonDialog(lesson: LessonData){
+        viewModelScope.launch {
+            try {
+                _uiState.update { currentState ->
+                    currentState.copy(
+                        deleteLesson = true,
+                        lessonToDelete = lesson
                     )
                 }
             }catch (e: Exception){ println(e) }

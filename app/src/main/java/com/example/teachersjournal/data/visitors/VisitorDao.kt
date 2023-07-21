@@ -6,10 +6,9 @@ import androidx.room.Query
 @Dao
 interface VisitorDao {
 
-    @Query("DELETE FROM visitors WHERE student_id = :studentId")
+    @Query("DELETE FROM visitors WHERE id = :studentId")
     suspend fun removeStudent(studentId: Int)
 
-
-    @Query("DELETE FROM visitors WHERE 'group' = :group")
+    @Query("DELETE FROM visitors WHERE 'student_group' = :group")
     suspend fun deleteGroup(group: String)
 }
