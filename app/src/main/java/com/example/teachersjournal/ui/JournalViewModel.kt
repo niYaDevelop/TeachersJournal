@@ -56,6 +56,8 @@ class JournalViewModel(
                         studentList = if(group!= null) journalDatabase.getStudentDao().getAllStudentsInGroup(group.groupName) else mutableListOf()
                     )
                 }
+                // расчет порядка следующего урока
+                // упдеит юи
             }catch (e: Exception){ println(e) }
         }
     }
